@@ -2,7 +2,7 @@ module ObjectAttorney
   module NestedObjects
 
     def nested_objects
-      @@nested_objects.map { |nested_object_sym| self.send(nested_object_sym) }.flatten
+      self.class.nested_objects.map { |nested_object_sym| self.send(nested_object_sym) }.flatten
     end
 
     def mark_for_destruction
@@ -18,10 +18,16 @@ module ObjectAttorney
 
       _destroy = attributes["_destroy"] || attributes[:_destroy]
 
-      object.mark_for_destruction if ["true", "1"].include?(_destroy)
+      object.mark_for_destruction if ["true", "1", true].include?(_destroy)
     end
 
     protected #################### PROTECTED METHODS DOWN BELOW ######################
+
+    def save_nested_objects(save_method)
+      nested_objects.map do |nested_object|
+        call_save_or_destroy(nested_object, save_method)
+      end.all?
+    end
 
     def validate_nested_objects
       #nested_objects.all?(&:valid?) #will not validate all nested_objects
@@ -31,7 +37,7 @@ module ObjectAttorney
     end
 
     def import_nested_objects_errors
-      @@nested_objects.map do |nested_object_sym|
+      self.class.nested_objects.map do |nested_object_sym|
         
         [*self.send(nested_object_sym)].each do |nested_object|
           nested_object.errors.full_messages.each { |message| self.errors.add(nested_object_sym, message) }
@@ -54,8 +60,6 @@ module ObjectAttorney
       base.class_eval do
         validate :validate_nested_objects
       end
-
-      @@nested_objects = []
     end
 
     def attributes_without_destroy(attributes)
@@ -101,7 +105,7 @@ module ObjectAttorney
 
     def build_new_nested_objects(existing_and_new_nested_objects, nested_object_name)
       (send("#{nested_object_name}_attributes") || {}).values.each do |attributes|
-        next if attributes["id"].present?
+        next if attributes["id"].present? || attributes[:id].present?
 
         new_nested_object = send("build_#{nested_object_name.to_s.singularize}", attributes_without_destroy(attributes))
         mark_for_destruction_if_necessary(new_nested_object, attributes)
@@ -120,6 +124,10 @@ module ObjectAttorney
 
       def reflect_on_association(association)
         nil
+      end
+
+      def nested_objects
+        self.instance_variable_get("@nested_objects") || zuper_method('nested_objects') || []
       end
 
       private #################### PRIVATE METHODS DOWN BELOW ######################
