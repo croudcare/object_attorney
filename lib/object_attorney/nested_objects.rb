@@ -116,28 +116,29 @@ module ObjectAttorney
 
     module ClassMethods
 
-      def accepts_nested_objects(*nested_objects_list)
-        self.instance_variable_set("@nested_objects", nested_objects_list)
-        self.send(:attr_accessor, *nested_objects_list.map { |attribute| "#{attribute}_attributes".to_sym })
-        define_nested_objects_getter_methods nested_objects_list
+      def accepts_nested_objects(nested_object_name, options = {})
+        reflection = AssociationReflection.new(nested_object_name, options)
+        self.instance_variable_set("@#{nested_object_name}_reflection", reflection)
+        self.instance_variable_set("@association_reflections", association_reflections | [reflection])
+
+        self.send(:attr_accessor, "#{nested_object_name}_attributes".to_sym)
+        define_method(nested_object_name) { nested_getter(nested_object_name) }
+      end
+
+      def association_reflections
+        self.instance_variable_get("@association_reflections") || zuper_method('association_reflections') || []
       end
 
       def reflect_on_association(association)
-        nil
+        self.instance_variable_get("@#{association}_reflection") || zuper_method('reflect_on_association', association)
+      end
+
+      def reflect_on_all_associations(macro = nil)
+        macro ? association_reflections.select { |reflection| reflection.macro == macro } : association_reflections
       end
 
       def nested_objects
-        self.instance_variable_get("@nested_objects") || zuper_method('nested_objects') || []
-      end
-
-      private #################### PRIVATE METHODS DOWN BELOW ######################
-
-      def define_nested_objects_getter_methods(nested_objects_list)
-        nested_objects_list.each do |nested_object_name|
-          define_method(nested_object_name) do
-            nested_getter(nested_object_name)
-          end
-        end
+        association_reflections.map(&:name)
       end
 
     end
