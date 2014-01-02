@@ -1,3 +1,9 @@
 class Post < ActiveRecord::Base
-  validates_presence_of :title
+  
+  has_many :comments
+  
+  has_one :address
+
+  belongs_to :user
+  
 end

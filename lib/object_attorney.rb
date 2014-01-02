@@ -1,29 +1,26 @@
 require "object_attorney/version"
 require "object_attorney/helpers"
-require "object_attorney/association_reflection"
+require "object_attorney/reflection"
 require "object_attorney/nested_objects"
 require "object_attorney/orm"
 require 'active_record'
 
 module ObjectAttorney
 
-  def initialize(attributes = {}, object = nil, options = {})
-    if !attributes.kind_of?(Hash) && object.blank?
+  def initialize(attributes = {}, object = nil)
+    if !attributes.is_a?(Hash) && object.blank?
       object = attributes
       attributes = nil
     end
 
     attributes = {} if attributes.blank?
 
-    if !attributes.include?("id") && object.kind_of?(String)
-      attributes["id"] = object
-      object = nil
-    end
-
     @represented_object = object if object.present?
 
     assign_attributes attributes
     mark_for_destruction_if_necessary(self, attributes)
+
+    init(attributes)
   end
 
   def assign_attributes(attributes = {})
@@ -38,10 +35,17 @@ module ObjectAttorney
     respond_to?(attribute) ? send(attribute) : nil
   end
 
+  def send_to_representative(method_name, *args)
+    return false if represented_object.blank?
+
+    represented_object.send(method_name, *args)
+  end
+
   protected #################### PROTECTED METHODS DOWN BELOW ######################
 
+  def init(attributes); end
+
   def allowed_attribute(attribute)
-    attribute = attribute.to_s
     respond_to?("#{attribute}=")
   end
 
@@ -86,9 +90,13 @@ module ObjectAttorney
   module ClassMethods
 
     def represents(represented_object_name, options = {})
-      self.instance_variable_set("@represented_object_reflection", AssociationReflection.new(represented_object_name, options))
+      self.instance_variable_set("@represented_object_reflection", Reflection.new(represented_object_name, options))
 
       define_method(represented_object_name) { represented_object }
+
+      if options.include?(:properties)
+        delegate_properties(*options[:properties], to: represented_object_name)
+      end
     end
 
     def represented_object_reflection

@@ -12,15 +12,24 @@ require 'pry'
 require 'object_attorney'
 require 'support/database_setup'
 require 'support/active_model/validations'
+require 'support/models/address'
+require 'support/models/comment'
 require 'support/models/post'
-require 'support/models/item'
-require 'support/models/post_form'
-require 'support/models/post_form_child'
-require 'support/models/bulk_posts_form'
-require 'support/models/bulk_posts_form_child'
+require 'support/models/user'
+
+require 'support/form_objects/post_form'
+require 'support/form_objects/comment_form'
+require 'support/form_objects/post_with_comment_form'
+require 'support/form_objects/post_with_comments_and_address_form'
+require 'support/form_objects/bulk_posts_form'
+require 'support/form_objects/bulk_posts_allow_only_existing_form'
+require 'support/form_objects/bulk_posts_allow_only_new_form'
+require 'support/form_objects/bulk_posts_with_form_objects_form'
+require 'support/form_objects/user_form'
 
 RSpec.configure do |config|
-  config.filter_run :current
+  #config.treat_symbols_as_metadata_keys_with_true_values = true
+  #config.filter_run :current
   
   I18n.enforce_available_locales = false
 
