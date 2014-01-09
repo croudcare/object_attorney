@@ -110,6 +110,12 @@ module ObjectAttorney
 
         nested_instance_variable = reflection.has_many? ? get_existing_and_new_nested_objects(nested_object_name) : get_existing_or_new_nested_object(nested_object_name)
 
+        [*nested_instance_variable].each do |nested_object|
+          nested_object.extend(ImportedErrors)
+
+          # nested_object.singleton_class.validate(:validate_imported_errors)
+        end
+
         self.instance_variable_set("@#{nested_object_name}", nested_instance_variable)
       end
 
@@ -168,7 +174,6 @@ module ObjectAttorney
     def build_nested_object(nested_object_name, attributes = {})
       reflection = self.class.reflect_on_association(nested_object_name)
       
-      
       if can_represented_object_build_nested?(reflection, nested_object_name)
         new_nested_object = build_from_represented_object(reflection, nested_object_name)
 
@@ -187,6 +192,7 @@ module ObjectAttorney
 
       if reflection.klass == real_reflection_class
         new_nested_object.assign_attributes(attributes)
+        new_nested_object
       else
         reflection.klass.respond_to?(:represents) ? reflection.klass.new(attributes, new_nested_object) : reflection.klass.new(attributes)
       end
