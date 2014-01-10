@@ -55,13 +55,7 @@ module ObjectAttorney
     end
 
     def validate_nested_objects
-      valid = nested_objects.map do |reflection, nested_object|
-        nested_object.marked_for_destruction? ? true : nested_object.valid?
-      end.all?
-
-      import_nested_objects_errors unless valid
-      
-      valid
+      nested_objects.map { |reflection, nested_object| nested_object.valid? }.all?
     end
 
     def import_nested_objects_errors
@@ -111,9 +105,7 @@ module ObjectAttorney
         nested_instance_variable = reflection.has_many? ? get_existing_and_new_nested_objects(nested_object_name) : get_existing_or_new_nested_object(nested_object_name)
 
         [*nested_instance_variable].each do |nested_object|
-          nested_object.extend(ImportedErrors)
-
-          # nested_object.singleton_class.validate(:validate_imported_errors)
+          nested_object.extend(Validations) unless nested_object.respond_to?(:represented_object)
         end
 
         self.instance_variable_set("@#{nested_object_name}", nested_instance_variable)
