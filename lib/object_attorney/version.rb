@@ -1,3 +1,3 @@
 module ObjectAttorney
-  VERSION = "2.6.12"
+  VERSION = "2.8.0"
 end
