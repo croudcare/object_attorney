@@ -50,6 +50,12 @@ module PostForm
   end
   
 
+  class Presenter
+    include ObjectAttorney
+    represents :post, delegate_missing_methods: true, properties: [:title]
+  end
+
+
   class Properties1
     include ObjectAttorney
     represents :post
@@ -94,7 +100,7 @@ module PostForm
   class Father < GrandFather
     properties :title
 
-    add_exposed_getters :email, :author
+    add_exposed_data :email, :author
 
     attr_accessor :email, :author
   end
@@ -106,7 +112,7 @@ module PostForm
   class GrandSon < Son
     setters :user_id
 
-    add_exposed_getters :date
+    add_exposed_data :date
 
     attr_accessor :date
   end
